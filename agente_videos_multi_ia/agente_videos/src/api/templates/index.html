@@ -31,6 +31,49 @@
                     `;
                     list.appendChild(li);
                 });
+
+                const trendsList = document.getElementById('tendencias');
+                if (trendsList && data.tendencias_atuais) {
+                    trendsList.innerHTML = '';
+                    data.tendencias_atuais.forEach(trend => {
+                        const li = document.createElement('li');
+                        li.className = 'py-3 sm:py-4';
+                        li.innerHTML = `
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">🔥 ${trend.topic} (${trend.country})</p>
+                                    <p class="text-sm text-gray-500 truncate">${trend.vertical} | Crescimento: <span class="text-green-600 font-semibold">${trend.growth}</span></p>
+                                </div>
+                            </div>
+                        `;
+                        trendsList.appendChild(li);
+                    });
+                }
+
+                if (data.tarefas_topview) {
+                    const topviewList = document.getElementById('topview-tasks-list');
+                    if (topviewList) {
+                        topviewList.innerHTML = '';
+                        Object.entries(data.tarefas_topview).forEach(([taskId, task]) => {
+                            let statusClass = 'bg-yellow-100 text-yellow-800';
+                            if (task.status === 'Concluído') statusClass = 'bg-green-100 text-green-800';
+                            else if (task.status === 'Falhou') statusClass = 'bg-red-100 text-red-800';
+                            
+                            topviewList.innerHTML += `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${taskId}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                                            ${task.status}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${task.details}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${task.updated_at}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                }
             } catch (error) {
                 console.error('Erro ao buscar status:', error);
             }
@@ -72,23 +115,80 @@
             </div>
         </div>
 
-        <!-- Log de Atividades -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 mb-8">
+            <!-- Log de Atividades -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Últimas Atividades</h3>
+                </div>
+                <ul role="list" class="divide-y divide-gray-200 px-4 sm:px-6" id="atividades">
+                    {% for ativ in state.ultimas_atividades %}
+                    <li class="py-3 sm:py-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ ativ.action }}</p>
+                                <p class="text-sm text-gray-500 truncate">{{ ativ.details }}</p>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Tendências Descobertas -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">🔥 Tendências em Alta</h3>
+                </div>
+                <ul role="list" class="divide-y divide-gray-200 px-4 sm:px-6" id="tendencias">
+                    {% for trend in state.tendencias_atuais %}
+                    <li class="py-3 sm:py-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">🔥 {{ trend.topic }} ({{ trend.country }})</p>
+                                <p class="text-sm text-gray-500 truncate">{{ trend.vertical }} | Crescimento: <span class="text-green-600 font-semibold">{{ trend.growth }}</span></p>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tarefas Topview -->
         <div class="bg-white shadow overflow-hidden sm:rounded-md">
             <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Últimas Atividades</h3>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Status de Geração de Vídeos (Topview.ai)</h3>
             </div>
-            <ul role="list" class="divide-y divide-gray-200 px-4 sm:px-6" id="atividades">
-                {% for ativ in state.ultimas_atividades %}
-                <li class="py-3 sm:py-4">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 truncate">{{ ativ.action }}</p>
-                            <p class="text-sm text-gray-500 truncate">{{ ativ.details }}</p>
-                        </div>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalhes</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Atualização</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="topview-tasks-list">
+                        {% for task_id, task in state.tarefas_topview.items() %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ task_id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if task.status == 'Concluído' %}bg-green-100 text-green-800
+                                    {% elif task.status == 'Falhou' %}bg-red-100 text-red-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ task.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ task.details }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ task.updated_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </body>

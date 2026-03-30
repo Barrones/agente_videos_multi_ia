@@ -6,9 +6,11 @@ from datetime import datetime
 
 from src.llm.factory import LLMFactory
 from src.integrations.elevenlabs_client import ElevenLabsIntegration
-from src.integrations.heygen_client import HeyGenIntegration
+from src.integrations.topview_client import TopviewIntegration
 from src.integrations.discord_client import DiscordIntegration
 from src.utils.video_processor import VideoProcessor
+from src.research.trend_analyzer import TrendAnalyzer
+from src.core.script_generator import ScriptGenerator
 
 class VideoAgentOrchestrator:
     def __init__(self, config: Dict[str, Any]):
@@ -22,9 +24,11 @@ class VideoAgentOrchestrator:
         self.llm = LLMFactory.create(llm_provider, llm_config)
         
         self.elevenlabs = ElevenLabsIntegration(config)
-        self.heygen = HeyGenIntegration(config)
+        self.topview = TopviewIntegration(config)
         self.discord = DiscordIntegration(config)
         self.video_processor = VideoProcessor()
+        self.trend_analyzer = TrendAnalyzer(llm=self.llm)
+        self.script_generator = ScriptGenerator(llm=self.llm)
         
         # Diretórios temporários
         os.makedirs("temp_audio", exist_ok=True)
@@ -87,24 +91,27 @@ class VideoAgentOrchestrator:
             logger.info(f"[{pais} - {vertical}] Iniciando processamento...")
             
             try:
-                # 1. Gerar Roteiro (LLM Dinâmico)
-                logger.info(f"[{pais}] Gerando roteiro com {self.llm.__class__.__name__}...")
+                # 1. Pesquisar Tendências
+                logger.info(f"[{pais}] Pesquisando tendências para {vertical}...")
+                trend_data = await self.trend_analyzer.analyze_trends(
+                    country=pais,
+                    vertical=vertical,
+                    language=task.get("idioma", "Português")
+                )
                 
-                # Adaptando a chamada para a nova interface base_llm
-                prompt = f"Crie um roteiro de vídeo UGC para {vertical} no país {pais}. Idioma: {task.get('idioma')}. Foco: {task.get('prompt_base')}"
-                system_prompt = "Você é um especialista em marketing digital criando roteiros de alta conversão no estilo UGC (User Generated Content)."
+                # 2. Gerar Roteiro Contextualizado
+                logger.info(f"[{pais}] Gerando roteiro baseado na tendência: {trend_data.get('trending_topic')}...")
+                script_data = await self.script_generator.generate_script(
+                    country=pais,
+                    vertical=vertical,
+                    language=task.get("idioma", "Português"),
+                    trend_data=trend_data
+                )
                 
-                roteiro_texto = await self.llm.generate_script(prompt, system_prompt)
+                # Adaptando para a estrutura esperada pelo resto do código
+                script_data["roteiro_completo"] = script_data.get("script_text", "")
                 
-                # Simulando a estrutura de dados esperada pelo resto do código
-                script_data = {
-                    "roteiro_completo": roteiro_texto,
-                    "gancho": "Gancho gerado",
-                    "corpo": "Corpo gerado",
-                    "cta": "CTA gerado"
-                }
-                
-                # 2. Gerar Áudio (ElevenLabs)
+                # 3. Gerar Áudio (ElevenLabs)
                 logger.info(f"[{pais}] Gerando áudio...")
                 audio_path = f"temp_audio/{task_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.mp3"
                 voice_id = self.config.get("apis", {}).get("elevenlabs", {}).get("default_voice_id", "mock_voice")
@@ -114,18 +121,40 @@ class VideoAgentOrchestrator:
                 # Aqui usaremos uma URL mockada para a API do Topview
                 audio_url = "https://mock.url/audio.mp3" 
                 
-                # 3. Gerar Vídeo UGC (HeyGen)
-                logger.info(f"[{pais}] Submetendo vídeo para HeyGen (UGC Style)...")
-                heygen_video_id = await self.heygen.generate_video(
-                    avatar_id=task.get("avatar_id", "default_ugc_avatar"),
-                    audio_url=audio_url,
-                    background_url=task.get("background_url")
+                # 4. Gerar Vídeo UGC (Topview)
+                logger.info(f"[{pais}] Submetendo vídeo para Topview (Avatar Marketing Video)...")
+                
+                # Otimização de avatar e voz baseada na vertical
+                # Finance: tom profissional, Shein: estilo influencer
+                if "Finanç" in vertical or "Finance" in vertical:
+                    topview_avatar_id = "avatar_professional_01" # Exemplo de ID para avatar profissional
+                    topview_voice_id = "voice_professional_trust"
+                elif "Shein" in vertical or "Produto" in vertical:
+                    topview_avatar_id = "avatar_influencer_02" # Exemplo de ID para avatar influencer
+                    topview_voice_id = "voice_casual_excited"
+                else:
+                    topview_avatar_id = task.get("avatar_id")
+                    topview_voice_id = None
+                
+                # Para Avatar Marketing Video, precisamos passar o script e opcionalmente um link de produto
+                # Vamos usar um link genérico se não houver um específico
+                product_link = task.get("product_link", "https://www.amazon.com/dp/B0CXVSRY56")
+                
+                topview_task_id = await self.topview.submit_task(
+                    script=script_data["roteiro_completo"],
+                    avatar_id=topview_avatar_id,
+                    voice_id=topview_voice_id,
+                    image_url=product_link,
+                    language=script_data.get("topview_lang", "en")
                 )
                 
-                logger.info(f"[{pais}] Aguardando processamento do vídeo...")
-                raw_video_url = await self.heygen.wait_for_completion(heygen_video_id)
+                logger.info(f"[{pais}] Aguardando processamento do vídeo (Task ID: {topview_task_id})...")
+                task_result = await self.topview.wait_for_completion(topview_task_id)
                 
-                # 4. Pós-processamento (Efeito Celular/UGC)
+                # A API retorna videoUrl ou previewVideoUrl dependendo se preview=true ou false
+                raw_video_url = task_result.get("videoUrl") or task_result.get("previewVideoUrl", "https://mock.url/preview.mp4")
+                
+                # 5. Pós-processamento (Efeito Celular/UGC)
                 logger.info(f"[{pais}] Aplicando filtros UGC (FFmpeg)...")
                 # Em um cenário real, faríamos o download do raw_video_url primeiro
                 # Aqui simulamos o processamento
@@ -133,11 +162,11 @@ class VideoAgentOrchestrator:
                 # await self.video_processor.apply_ugc_filter("downloaded_raw.mp4", processed_video_path)
                 final_preview_url = raw_video_url # Usando a URL gerada para preview
                 
-                # 5. Enviar para Aprovação (Discord)
+                # 6. Enviar para Aprovação (Discord)
                 logger.info(f"[{pais}] Enviando para aprovação no Discord...")
                 msg_id = await self.discord.send_approval_message(task, final_preview_url, script_data)
                 
-                # 6. Aguardar Aprovação
+                # 7. Aguardar Aprovação
                 logger.info(f"[{pais}] Aguardando aprovação humana...")
                 is_approved = await self.discord.wait_for_approval(msg_id)
                 

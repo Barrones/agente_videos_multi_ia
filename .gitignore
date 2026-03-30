@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+
+# Ambiente
+.env
+.venv
+venv/
+env/
+
+# Logs e temporários
+logs/
+temp_audio/
+temp_video/
+*.log
+
+# Credenciais
+*credentials*.json
+google_credentials.json
+
+# OS
+.DS_Store
+Thumbs.db
