@@ -1,0 +1,45 @@
+# Configurações do Agente de Vídeos de Alta Conversão
+
+execution:
+  interval_minutes: 60
+  max_parallel_tasks: 3
+  retry_attempts: 3
+  retry_delay_seconds: 10
+
+llm:
+  provider: "gpt" # Opções: gpt, claude, gemini, manus, copilot
+  providers:
+    gpt:
+      api_key: "${OPENAI_API_KEY}"
+      model: "gpt-4o"
+    claude:
+      api_key: "${ANTHROPIC_API_KEY}"
+      model: "claude-3-5-sonnet-20240620"
+    gemini:
+      api_key: "${GOOGLE_API_KEY}"
+      model: "gemini-2.5-flash"
+
+apis:
+  elevenlabs:
+    model: "eleven_turbo_v2_5"
+    api_key: "${ELEVENLABS_API_KEY}"
+    default_voice_id: "pNInz6obbf5AWCGqeA" # Exemplo
+    
+  topview:
+    quality: "1080p"
+    api_key: "${TOPVIEW_API_KEY}"
+    uid: "${TOPVIEW_UID}"
+    
+  discord:
+    bot_token: "${DISCORD_BOT_TOKEN}"
+    channel_id: "${DISCORD_CHANNEL_ID}"
+    
+  google:
+    credentials_file: "config/google_credentials.json"
+    spreadsheet_id: "${GOOGLE_SHEETS_ID}"
+    drive_folder_id: "${GOOGLE_DRIVE_FOLDER_ID}"
+
+cache:
+  enabled: true
+  file_path: "logs/cache.json"
+  ttl_hours: 24

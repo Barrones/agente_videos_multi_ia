@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Agente de Vídeos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                document.getElementById('status').innerText = data.status;
+                document.getElementById('gerados').innerText = data.videos_gerados_hoje;
+                document.getElementById('aprovados').innerText = data.videos_aprovados;
+                document.getElementById('rejeitados').innerText = data.videos_rejeitados;
+                
+                const list = document.getElementById('atividades');
+                list.innerHTML = '';
+                data.ultimas_atividades.forEach(ativ => {
+                    const li = document.createElement('li');
+                    li.className = 'py-3 sm:py-4';
+                    li.innerHTML = `
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">${ativ.action}</p>
+                                <p class="text-sm text-gray-500 truncate">${ativ.details}</p>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Erro ao buscar status:', error);
+            }
+        }
+
+        setInterval(fetchStatus, 5000); // Atualiza a cada 5 segundos
+        window.onload = fetchStatus;
+    </script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">🎬 Agente de Vídeos - Alta Conversão</h1>
+        
+        <!-- Cards de Estatísticas -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-4 mb-8">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Status do Agente</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-green-600" id="status">{{ state.status }}</dd>
+                </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Vídeos Gerados (Hoje)</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-blue-600" id="gerados">{{ state.videos_gerados_hoje }}</dd>
+                </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Aprovados</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-indigo-600" id="aprovados">{{ state.videos_aprovados }}</dd>
+                </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Rejeitados</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-red-600" id="rejeitados">{{ state.videos_rejeitados }}</dd>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log de Atividades -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Últimas Atividades</h3>
+            </div>
+            <ul role="list" class="divide-y divide-gray-200 px-4 sm:px-6" id="atividades">
+                {% for ativ in state.ultimas_atividades %}
+                <li class="py-3 sm:py-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ ativ.action }}</p>
+                            <p class="text-sm text-gray-500 truncate">{{ ativ.details }}</p>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

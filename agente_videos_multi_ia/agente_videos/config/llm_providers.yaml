@@ -1,0 +1,27 @@
+# Configuração do Provedor de IA (LLM)
+# Escolha qual IA o agente deve usar para gerar os roteiros e analisar tendências
+
+# Provedor ativo (opções: gpt, claude, gemini, manus, copilot)
+provider: "gpt"
+
+# Configurações específicas de cada provedor
+providers:
+  gpt:
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4-turbo" # ou gpt-4o, gpt-3.5-turbo
+    
+  claude:
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-3-5-sonnet-20240620" # ou claude-3-opus-20240229
+    
+  gemini:
+    api_key: "${GOOGLE_API_KEY}"
+    model: "gemini-2.5-flash" # ou gemini-1.5-pro
+    
+  manus:
+    api_key: "${MANUS_API_KEY}"
+    model: "gpt-4.1-mini"
+    
+  copilot:
+    api_key: "${COPILOT_API_KEY}"
+    model: "copilot-pro"

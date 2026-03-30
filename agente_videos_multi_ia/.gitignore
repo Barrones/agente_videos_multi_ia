@@ -1,0 +1,39 @@
+# Segredos e variáveis de ambiente
+*.env
+.env
+env.rtf
+*.rtf
+agente_videos/config/google_credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Logs e cache
+agente_videos/logs/*.json
+agente_videos/logs/*.log
+logs/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter
+.ipynb_checkpoints/
